@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aviator Predictor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .glow-effect {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
+        }
+        .glow-effect:hover {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.9);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="max-w-md w-full bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-700">
+        <div class="bg-blue-900 p-6 text-center">
+            <h1 class="text-3xl font-bold text-white flex items-center justify-center">
+                <i class="fas fa-rocket mr-3"></i> Aviator Predictor
+            </h1>
+            <p class="text-blue-200 mt-2">Ingresa los últimos multiplicadores para predecir el próximo</p>
+        </div>
+        
+        <div class="p-6">
+            <div class="mb-6">
+                <label for="multipliers" class="block text-sm font-medium text-gray-300 mb-2">
+                    <i class="fas fa-list-ol mr-2"></i> Multiplicadores anteriores (separados por comas):
+                </label>
+                <textarea id="multipliers" rows="4" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400" placeholder="Ejemplo: 1.5, 2.1, 1.2, 3.4, 1.8"></textarea>
+            </div>
+            
+            <button id="predictBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 glow-effect flex items-center justify-center">
+                <i class="fas fa-calculator mr-2"></i> Predecir próximo multiplicador
+            </button>
+            
+            <div id="resultContainer" class="mt-6 hidden slide-in">
+                <div class="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                    <h3 class="text-lg font-semibold text-blue-400 mb-2 flex items-center">
+                        <i class="fas fa-chart-line mr-2"></i> Predicción:
+                    </h3>
+                    <div id="prediction" class="text-4xl font-bold text-center my-4 text-blue-300 pulse-animation">
+                        -
+                    </div>
+                    <div id="warning" class="hidden bg-yellow-900 text-yellow-100 p-3 rounded-lg mb-3 flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span>¡Han salido muchos bajos! Podría venir uno alto pronto.</span>
+                    </div>
+                    <div id="stats" class="text-sm text-gray-300">
+                        <div class="flex justify-between mb-1">
+                            <span><i class="fas fa-history mr-1"></i> Últimos 5:</span>
+                            <span id="lastFive" class="font-mono">-</span>
+                        </div>
+                        <div class="flex justify-between mb-1">
+                            <span><i class="fas fa-calculator mr-1"></i> Promedio:</span>
+                            <span id="average" class="font-mono">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span><i class="fas fa-random mr-1"></i> Ajuste aleatorio:</span>
+                            <span id="randomAdjust" class="font-mono">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-700 px-6 py-4 text-center text-sm text-gray-400">
+            <p><i class="fas fa-info-circle mr-1"></i> Este predictor no garantiza resultados exactos. Úsalo como referencia.</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictBtn').addEventListener('click', function() {
+            const input = document.getElementById('multipliers').value.trim();
+            const resultContainer = document.getElementById('resultContainer');
+            const predictionElement = document.getElementById('prediction');
+            const warningElement = document.getElementById('warning');
+            const lastFiveElement = document.getElementById('lastFive');
+            const averageElement = document.getElementById('average');
+            const randomAdjustElement = document.getElementById('randomAdjust');
+            
+            // Reset UI
+            resultContainer.classList.add('hidden');
+            warningElement.classList.add('hidden');
+            
+            if (!input) {
+                alert('Por favor ingresa al menos un multiplicador');
+                return;
+            }
+            
+            try {
+                // Parse input
+                const multipliers = input.split(',')
+                    .map(item => parseFloat(item.trim()))
+                    .filter(item => !isNaN(item) && item > 0);
+                
+                if (multipliers.length === 0) {
+                    alert('No se encontraron multiplicadores válidos');
+                    return;
+                }
+                
+                // Get last 5 multipliers
+                const lastFive = multipliers.slice(-5);
+                lastFiveElement.textContent = lastFive.join(', ');
+                
+                // Calculate average
+                const sum = lastFive.reduce((a, b) => a + b, 0);
+                const average = sum / lastFive.length;
+                averageElement.textContent = average.toFixed(2);
+                
+                // Check for many low multipliers
+                const lowCount = lastFive.filter(x => x < 1.5).length;
+                if (lowCount >= 3) {
+                    warningElement.classList.remove('hidden');
+                }
+                
+                // Add random adjustment (-0.3 to +0.3)
+                const randomAdjust = (Math.random() * 0.6) - 0.3;
+                randomAdjustElement.textContent = (randomAdjust >= 0 ? '+' : '') + randomAdjust.toFixed(2);
+                
+                // Calculate prediction
+                const prediction = Math.max(1.0, average + randomAdjust);
+                
+                // Display result with animation
+                predictionElement.textContent = prediction.toFixed(2);
+                resultContainer.classList.remove('hidden');
+                
+                // Add visual feedback based on prediction
+                if (prediction >= 2.5) {
+                    predictionElement.classList.remove('text-blue-300', 'text-green-300');
+                    predictionElement.classList.add('text-green-400');
+                } else if (prediction >= 1.5) {
+                    predictionElement.classList.remove('text-blue-300', 'text-green-400');
+                    predictionElement.classList.add('text-green-300');
+                } else {
+                    predictionElement.classList.remove('text-green-300', 'text-green-400');
+                    predictionElement.classList.add('text-blue-300');
+                }
+                
+            } catch (error) {
+                alert('Ocurrió un error al procesar los datos: ' + error.message);
+                console.error(error);
+            }
+});
+    </script>
+</body>
+</html>
